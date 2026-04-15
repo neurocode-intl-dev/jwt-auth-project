@@ -10,8 +10,8 @@ const userModel = require("../models/user.model");
  * GET /api/users/me
  * Returns the profile of the currently authenticated user.
  */
-function getMe(req, res) {
-  const user = userModel.findById(req.user.sub);
+async function getMe(req, res) {
+  const user = await userModel.findById(req.user.sub);
   if (!user) return res.status(404).json({ message: "User not found" });
 
   const { passwordHash, ...safeUser } = user;

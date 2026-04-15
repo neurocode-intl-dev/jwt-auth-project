@@ -2,7 +2,6 @@
   "name": "jwt-auth-project",
   "version": "1.0.0",
   "description": "",
-  "main": "index.js",
   "description": "JWT access + refresh token auth with Node.js & Express",
   "main": "src/server.js",
   "scripts": {
@@ -23,7 +22,8 @@
     "cors": "^2.8.6",
     "dotenv": "^17.4.2",
     "express": "^5.2.1",
-    "jsonwebtoken": "^9.0.3"
+    "jsonwebtoken": "^9.0.3",
+    "mysql2": "^3.4.0"
   },
   "devDependencies": {
     "jest": "^30.3.0",

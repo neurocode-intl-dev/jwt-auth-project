@@ -35,7 +35,10 @@ describe("Auth flow", () => {
       .expect(201);
 
     expect(res.body).toHaveProperty("accessToken");
-    expect(res.body.user).toMatchObject({ email: testUser.email, role: "user" });
+    expect(res.body.user).toMatchObject({
+      email: testUser.email,
+      role: "user",
+    });
 
     accessToken = res.body.accessToken;
     refreshCookie = getCookie(res, "refreshToken");
@@ -43,10 +46,7 @@ describe("Auth flow", () => {
   });
 
   test("POST /api/auth/register – rejects duplicate email", async () => {
-    await request(app)
-      .post("/api/auth/register")
-      .send(testUser)
-      .expect(500); // our error handler converts the thrown Error → 500
+    await request(app).post("/api/auth/register").send(testUser).expect(409); // duplicate email is now reported as conflict
   });
 
   // ── Login ─────────────────────────────────────────────────

@@ -1,54 +1,66 @@
-/**
- * user.model.js  –  In-memory "database"
- *
- * In a real app this would be Mongoose / Prisma / Sequelize, etc.
- * Keeping it in-memory so you can run the project with zero setup.
- */
-
 const bcrypt = require("bcryptjs");
+const { init, getPool } = require("./db");
 
-const users = []; // { id, email, passwordHash, role }
-
-/**
- * Find a user by email (case-insensitive).
- */
-function findByEmail(email) {
-  return users.find((u) => u.email.toLowerCase() === email.toLowerCase());
+function normalizeEmail(email) {
+  return String(email || "")
+    .trim()
+    .toLowerCase();
 }
 
-/**
- * Find a user by id.
- */
-function findById(id) {
-  return users.find((u) => u.id === id);
+async function findByEmail(email) {
+  const normalizedEmail = normalizeEmail(email);
+  if (!normalizedEmail) return null;
+
+  await init();
+  const pool = getPool();
+  const [rows] = await pool.execute("SELECT * FROM users WHERE email = ?", [
+    normalizedEmail,
+  ]);
+  return rows[0] || null;
 }
 
-/**
- * Create a new user, hashing the plain-text password first.
- * Returns the created user (without the hash).
- */
+async function findById(id) {
+  if (!id) return null;
+
+  await init();
+  const pool = getPool();
+  const [rows] = await pool.execute("SELECT * FROM users WHERE id = ?", [id]);
+  return rows[0] || null;
+}
+
 async function create({ email, password, role = "user" }) {
-  if (findByEmail(email)) {
-    throw new Error("Email already registered");
+  const normalizedEmail = normalizeEmail(email);
+  if (!normalizedEmail || !password) {
+    const err = new Error("email and password are required");
+    err.statusCode = 400;
+    throw err;
+  }
+
+  if (await findByEmail(normalizedEmail)) {
+    const err = new Error("Email already registered");
+    err.statusCode = 409;
+    throw err;
   }
 
   const passwordHash = await bcrypt.hash(password, 10);
   const user = {
     id: `user_${Date.now()}`,
-    email,
+    email: normalizedEmail,
     passwordHash,
     role,
   };
 
-  users.push(user);
+  await init();
+  const pool = getPool();
+  await pool.execute(
+    "INSERT INTO users (id, email, passwordHash, role) VALUES (?, ?, ?, ?)",
+    [user.id, user.email, user.passwordHash, user.role],
+  );
 
   const { passwordHash: _, ...safeUser } = user;
   return safeUser;
 }
 
-/**
- * Validate a plain-text password against a stored hash.
- */
 async function verifyPassword(plainText, hash) {
   return bcrypt.compare(plainText, hash);
 }

@@ -46,7 +46,9 @@ async function register(req, res, next) {
     const { email, password } = req.body;
 
     if (!email || !password) {
-      return res.status(400).json({ message: "email and password are required" });
+      return res
+        .status(400)
+        .json({ message: "email and password are required" });
     }
 
     const user = await userModel.create({ email, password });
@@ -68,7 +70,7 @@ async function login(req, res, next) {
   try {
     const { email, password } = req.body;
 
-    const user = userModel.findByEmail(email);
+    const user = await userModel.findByEmail(email);
     if (!user) {
       return res.status(401).json({ message: "Invalid credentials" });
     }
@@ -112,7 +114,9 @@ async function refresh(req, res, next) {
     try {
       decoded = verifyRefreshToken(oldRefreshToken);
     } catch {
-      return res.status(403).json({ message: "Refresh token expired or invalid" });
+      return res
+        .status(403)
+        .json({ message: "Refresh token expired or invalid" });
     }
 
     const userId = decoded.sub;
@@ -121,15 +125,17 @@ async function refresh(req, res, next) {
     if (!tokenStore.has(userId, oldRefreshToken)) {
       // Token reuse detected → revoke all tokens for this user (security measure)
       tokenStore.removeAll(userId);
-      res.clearCookie(rtCfg.cookieName);
-      return res.status(403).json({ message: "Token reuse detected. Please log in again." });
+      res.clearCookie(rtCfg.cookieName, rtCfg.cookieOptions);
+      return res
+        .status(403)
+        .json({ message: "Token reuse detected. Please log in again." });
     }
 
     // Rotate: delete old token
     tokenStore.remove(userId, oldRefreshToken);
 
     // Look up the user
-    const user = userModel.findById(userId);
+    const user = await userModel.findById(userId);
     if (!user) {
       return res.status(403).json({ message: "User not found" });
     }
