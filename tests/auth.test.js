@@ -7,6 +7,8 @@
  * Run with:  npm test
  */
 
+const assert = require("node:assert/strict");
+const { test } = require("node:test");
 const request = require("supertest");
 const app = require("../src/app");
 
@@ -17,7 +19,7 @@ function getCookie(res, name) {
   return found ? found.split(";")[0] : null;
 }
 
-describe("Auth flow", () => {
+test("Auth flow", async (t) => {
   let accessToken;
   let refreshCookie;
 
@@ -26,93 +28,81 @@ describe("Auth flow", () => {
     password: "Str0ng!Pass",
   };
 
-  // ── Register ──────────────────────────────────────────────
-
-  test("POST /api/auth/register – creates a user and returns tokens", async () => {
+  await t.test("POST /api/auth/register creates a user and returns tokens", async () => {
     const res = await request(app)
       .post("/api/auth/register")
       .send(testUser)
       .expect(201);
 
-    expect(res.body).toHaveProperty("accessToken");
-    expect(res.body.user).toMatchObject({
-      email: testUser.email,
-      role: "user",
-    });
+    assert.ok(res.body.accessToken);
+    assert.equal(res.body.user.email, testUser.email);
+    assert.equal(res.body.user.role, "user");
 
     accessToken = res.body.accessToken;
     refreshCookie = getCookie(res, "refreshToken");
-    expect(refreshCookie).toBeTruthy();
+    assert.ok(refreshCookie);
   });
 
-  test("POST /api/auth/register – rejects duplicate email", async () => {
+  await t.test("POST /api/auth/register rejects duplicate email", async () => {
     await request(app).post("/api/auth/register").send(testUser).expect(409); // duplicate email is now reported as conflict
   });
 
-  // ── Login ─────────────────────────────────────────────────
-
-  test("POST /api/auth/login – returns access token for valid credentials", async () => {
+  await t.test("POST /api/auth/login returns access token for valid credentials", async () => {
     const res = await request(app)
       .post("/api/auth/login")
       .send(testUser)
       .expect(200);
 
-    expect(res.body).toHaveProperty("accessToken");
+    assert.ok(res.body.accessToken);
     accessToken = res.body.accessToken;
     refreshCookie = getCookie(res, "refreshToken");
   });
 
-  test("POST /api/auth/login – rejects wrong password", async () => {
+  await t.test("POST /api/auth/login rejects wrong password", async () => {
     await request(app)
       .post("/api/auth/login")
       .send({ email: testUser.email, password: "wrong" })
       .expect(401);
   });
 
-  // ── Protected route ───────────────────────────────────────
-
-  test("GET /api/users/me – returns profile with valid access token", async () => {
+  await t.test("GET /api/users/me returns profile with valid access token", async () => {
     const res = await request(app)
       .get("/api/users/me")
       .set("Authorization", `Bearer ${accessToken}`)
       .expect(200);
 
-    expect(res.body.user).toMatchObject({ email: testUser.email });
+    assert.equal(res.body.user.email, testUser.email);
   });
 
-  test("GET /api/users/me – returns 401 without token", async () => {
+  await t.test("GET /api/users/me returns 401 without token", async () => {
     await request(app).get("/api/users/me").expect(401);
   });
 
-  // ── Refresh ───────────────────────────────────────────────
-
-  test("POST /api/auth/refresh – issues new access token using cookie", async () => {
+  await t.test("POST /api/auth/refresh issues new access token using cookie", async () => {
     const res = await request(app)
       .post("/api/auth/refresh")
       .set("Cookie", refreshCookie)
       .expect(200);
 
-    expect(res.body).toHaveProperty("accessToken");
+    assert.ok(res.body.accessToken);
     accessToken = res.body.accessToken; // rotate our copy too
     refreshCookie = getCookie(res, "refreshToken");
   });
 
-  test("POST /api/auth/refresh – rejects if cookie missing", async () => {
+  await t.test("POST /api/auth/refresh rejects if cookie missing", async () => {
     await request(app).post("/api/auth/refresh").expect(401);
   });
 
-  // ── Logout ────────────────────────────────────────────────
-
-  test("POST /api/auth/logout – clears cookie", async () => {
+  await t.test("POST /api/auth/logout clears cookie", async () => {
     const res = await request(app)
       .post("/api/auth/logout")
       .set("Cookie", refreshCookie)
       .expect(200);
 
-    expect(res.body.message).toMatch(/logged out/i);
+    assert.match(res.body.message, /logged out/i);
   });
 
-  test("POST /api/auth/refresh – rejected after logout (token revoked)", async () => {
+  await t.test("POST /api/auth/refresh is rejected after logout", async () => {
     await request(app)
       .post("/api/auth/refresh")
       .set("Cookie", refreshCookie)

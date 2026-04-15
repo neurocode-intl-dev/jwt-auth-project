@@ -28,7 +28,7 @@ src/
     auth.routes.js       ← /api/auth/*
     user.routes.js       ← /api/users/*
 tests/
-  auth.test.js           ← Integration tests (supertest + Jest)
+  auth.test.js           ← Integration tests (supertest + node:test)
 ```
 
 ---
