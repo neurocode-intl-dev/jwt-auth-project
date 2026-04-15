@@ -4,22 +4,44 @@ const dbConfig = require("../config/db.config");
 let pool;
 let initPromise;
 
+function canSkipDatabaseCreation(error) {
+  return [
+    "ER_ACCESS_DENIED_ERROR",
+    "ER_DBACCESS_DENIED_ERROR",
+    "ER_SPECIFIC_ACCESS_DENIED_ERROR",
+  ].includes(error?.code);
+}
+
 async function init() {
   if (initPromise) return initPromise;
 
   initPromise = (async () => {
-    const rootConnection = await mysql.createConnection({
-      host: dbConfig.host,
-      port: dbConfig.port,
-      user: dbConfig.user,
-      password: dbConfig.password,
-      multipleStatements: true,
-    });
+    let rootConnection;
 
-    await rootConnection.query(
-      `CREATE DATABASE IF NOT EXISTS \`${dbConfig.database}\``,
-    );
-    await rootConnection.end();
+    try {
+      rootConnection = await mysql.createConnection({
+        host: dbConfig.host,
+        port: dbConfig.port,
+        user: dbConfig.user,
+        password: dbConfig.password,
+        multipleStatements: true,
+      });
+
+      await rootConnection.query(
+        `CREATE DATABASE IF NOT EXISTS \`${dbConfig.database}\``,
+      );
+    } catch (error) {
+      if (!canSkipDatabaseCreation(error)) throw error;
+
+      console.warn(
+        `Skipping CREATE DATABASE for "${dbConfig.database}" (${error.code}). ` +
+          "Use a pre-created database on managed hosts.",
+      );
+    } finally {
+      if (rootConnection) {
+        await rootConnection.end().catch(() => {});
+      }
+    }
 
     pool = mysql.createPool({
       host: dbConfig.host,

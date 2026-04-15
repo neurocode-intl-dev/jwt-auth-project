@@ -81,6 +81,19 @@ npm run dev
 npm test
 ```
 
+## Deployment Notes
+
+- Deploy this project as a **Node.js web service**, not as a static site.
+- Start command: `npm start`
+- Runtime entrypoint: `src/server.js`
+- Output directory: none
+- Required environment variables:
+  `PORT`, `DB_HOST`, `DB_PORT`, `DB_USER`, `DB_PASSWORD`, `DB_NAME`,
+  `ACCESS_TOKEN_SECRET`, `REFRESH_TOKEN_SECRET`
+- On managed MySQL providers, the database is often pre-created for you. This app
+  now skips `CREATE DATABASE` if your DB user does not have that permission, but
+  the database named by `DB_NAME` still needs to exist.
+
 ---
 
 ## API Reference
