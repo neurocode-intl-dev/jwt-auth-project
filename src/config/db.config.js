@@ -8,3 +8,5 @@ module.exports = {
   database: process.env.DB_NAME || "jwt_auth_project",
   connectionLimit: Number(process.env.DB_CONNECTION_LIMIT || 10),
 };
+
+

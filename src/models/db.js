@@ -27,9 +27,9 @@ async function init() {
         multipleStatements: true,
       });
 
-      await rootConnection.query(
-        `CREATE DATABASE IF NOT EXISTS \`${dbConfig.database}\``,
-      );
+    //   await rootConnection.query(
+    //     `CREATE DATABASE IF NOT EXISTS \`${dbConfig.database}\``,
+    //   );
     } catch (error) {
       if (!canSkipDatabaseCreation(error)) throw error;
 
