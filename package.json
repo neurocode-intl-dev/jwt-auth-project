@@ -1,7 +1,6 @@
 {
   "name": "jwt-auth-project",
   "version": "1.0.0",
-  "description": "",
   "description": "JWT access + refresh token auth with Node.js & Express",
   "main": "src/server.js",
   "scripts": {
